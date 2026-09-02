@@ -1,0 +1,8 @@
+{
+  "usuarios": [
+    {"id": 1, "nome": "Administrador", "email": "admin@estoque.com",       "perfil": "admin"},
+    {"id": 2, "nome": "Gerente",       "email": "gerente@estoque.com",     "perfil": "gerente"},
+    {"id": 3, "nome": "Operacional",   "email": "operacional@estoque.com", "perfil": "operacional"}
+  ],
+  "next_id": 4
+}
