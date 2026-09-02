@@ -8,6 +8,7 @@ $msg=''; $erro='';
 
 if ($_SERVER['REQUEST_METHOD']==='POST') {
     if (!$pode_editar) { $erro='Você não tem permissão.'; }
+    elseif (!csrf_valido($_POST['csrf_token'] ?? null)) { $erro='Sessão expirada. Recarregue a página e tente novamente.'; }
     else {
         $nf=trim($_POST['nota_fiscal']??''); $data=trim($_POST['data']??'');
         $forn_id=(int)($_POST['fornecedor_id']??0); $prod_id=(int)($_POST['produto_id']??0);
@@ -126,6 +127,7 @@ $total_ent=array_sum(array_column($entradas,'total'));
       <button class="modal-close" onclick="document.getElementById('modalEntrada').style.display='none'">✕</button>
     </div>
     <form method="POST">
+            <?= csrf_campo() ?>
       <div class="form-grid">
         <div class="form-group"><label>Nota Fiscal *</label><input type="text" name="nota_fiscal" required class="input-field" placeholder="NF-000"></div>
         <div class="form-group"><label>Data *</label><input type="date" name="data" required class="input-field" value="<?= date('Y-m-d') ?>"></div>

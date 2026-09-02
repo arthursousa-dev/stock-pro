@@ -9,6 +9,8 @@ $msg = ''; $erro = '';
 if ($_SERVER['REQUEST_METHOD']==='POST') {
     if (!$pode_editar) {
         $erro = 'Você não tem permissão para realizar esta ação.';
+    } elseif (!csrf_valido($_POST['csrf_token'] ?? null)) {
+        $erro = 'Sessão expirada. Recarregue a página e tente novamente.';
     } else {
         $acao = $_POST['acao'] ?? '';
         $db = ler_json('db_produtos.json');
@@ -149,6 +151,7 @@ $baixo_count = count(array_filter($produtos, fn($p)=>($p['estoque']??0)<=($p['es
             <button class="btn-xs btn-edit" onclick="editarProduto(<?= htmlspecialchars(json_encode($p)) ?>)" title="Editar">✏️</button>
             <?php if(verificar_permissao(['admin'])): ?>
             <form method="POST" style="display:inline" onsubmit="return confirm('Excluir produto?')">
+            <?= csrf_campo() ?>
               <input type="hidden" name="acao" value="excluir">
               <input type="hidden" name="id" value="<?= $p['id'] ?>">
               <button type="submit" class="btn-xs btn-del" title="Excluir">🗑️</button>
@@ -171,6 +174,7 @@ $baixo_count = count(array_filter($produtos, fn($p)=>($p['estoque']??0)<=($p['es
       <button class="modal-close" onclick="fecharModal()">✕</button>
     </div>
     <form method="POST">
+            <?= csrf_campo() ?>
       <input type="hidden" name="acao" value="salvar">
       <input type="hidden" name="id" id="prod_id" value="0">
       <div class="form-grid">

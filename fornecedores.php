@@ -8,6 +8,7 @@ $msg=''; $erro='';
 
 if ($_SERVER['REQUEST_METHOD']==='POST') {
     if (!$pode_editar) { $erro='Você não tem permissão.'; }
+    elseif (!csrf_valido($_POST['csrf_token'] ?? null)) { $erro='Sessão expirada. Recarregue a página e tente novamente.'; }
     else {
         $acao=$_POST['acao']??'';
         $db=ler_json('db_fornecedores.json'); $forn=$db['fornecedores']??[]; $next_id=$db['next_id']??1;
@@ -99,6 +100,7 @@ $lista=$busca?array_filter($fornecedores,fn($f)=>str_contains(mb_strtolower($f['
             <button class="btn-xs btn-edit" onclick="editarForn(<?= htmlspecialchars(json_encode($f)) ?>)" title="Editar">✏️</button>
             <?php if(verificar_permissao(['admin'])): ?>
             <form method="POST" style="display:inline" onsubmit="return confirm('Excluir fornecedor?')">
+            <?= csrf_campo() ?>
               <input type="hidden" name="acao" value="excluir">
               <input type="hidden" name="id" value="<?= $f['id'] ?>">
               <button type="submit" class="btn-xs btn-del" title="Excluir">🗑️</button>
@@ -137,6 +139,7 @@ $lista=$busca?array_filter($fornecedores,fn($f)=>str_contains(mb_strtolower($f['
       <button class="modal-close" onclick="document.getElementById('modalForn').style.display='none'">✕</button>
     </div>
     <form method="POST">
+            <?= csrf_campo() ?>
       <input type="hidden" name="acao" value="salvar">
       <input type="hidden" name="id" id="forn_id" value="0">
       <div class="form-grid">
