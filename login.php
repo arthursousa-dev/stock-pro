@@ -1,26 +1,26 @@
 <?php
 session_start();
+require 'functions.php';
 if (!empty($_GET['_db_fresh'])) { $_SESSION = []; session_regenerate_id(true); }
-
-$credenciais = [
-    'admin@estoque.com'       => ['senha' => 'admin123',       'nome' => 'Administrador', 'perfil' => 'admin'],
-    'gerente@estoque.com'     => ['senha' => 'gerente123',     'nome' => 'Gerente',       'perfil' => 'gerente'],
-    'operacional@estoque.com' => ['senha' => 'operacional123', 'nome' => 'Operacional',   'perfil' => 'operacional'],
-];
 
 $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email'] ?? '');
-    $senha = trim($_POST['senha'] ?? '');
-    if (isset($credenciais[$email]) && $credenciais[$email]['senha'] === $senha) {
-        $_SESSION['logado'] = true;
-        $_SESSION['email']  = $email;
-        $_SESSION['nome']   = $credenciais[$email]['nome'];
-        $_SESSION['perfil'] = $credenciais[$email]['perfil'];
-        header('Location: index.php');
-        exit;
+    if (!csrf_valido($_POST['csrf_token'] ?? null)) {
+        $erro = 'Sessão expirada. Recarregue a página e tente novamente.';
     } else {
-        $erro = 'E-mail ou senha inválidos.';
+        $email = trim($_POST['email'] ?? '');
+        $senha = trim($_POST['senha'] ?? '');
+        $usuario = autenticar($email, $senha);
+        if ($usuario) {
+            $_SESSION['logado'] = true;
+            $_SESSION['email']  = $usuario['email'];
+            $_SESSION['nome']   = $usuario['nome'];
+            $_SESSION['perfil'] = $usuario['perfil'];
+            header('Location: index.php');
+            exit;
+        } else {
+            $erro = 'E-mail ou senha inválidos.';
+        }
     }
 }
 ?>
@@ -198,6 +198,7 @@ body{
     <?php endif; ?>
 
     <form method="POST" action="login.php">
+      <?= csrf_campo() ?>
       <div class="form-group">
         <label>E-mail</label>
         <input type="email" name="email" placeholder="seu@email.com" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required autocomplete="email">

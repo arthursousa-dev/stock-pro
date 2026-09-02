@@ -85,4 +85,36 @@ function perfil_label($perfil) {
     $labels = ['admin' => 'Administrador', 'gerente' => 'Gerente', 'operacional' => 'Operacional'];
     return $labels[$perfil] ?? ucfirst($perfil);
 }
+
+/**
+ * Autentica contra db_usuarios.json (onde a senha é armazenada como hash bcrypt).
+ * Retorna o registro do usuário ou false.
+ */
+function autenticar($email, $senha) {
+    $db = ler_json('db_usuarios.json');
+    foreach (($db['usuarios'] ?? []) as $u) {
+        if (strtolower($u['email']) === strtolower($email) && password_verify($senha, $u['senha'] ?? '')) {
+            return $u;
+        }
+    }
+    return false;
+}
+
+/**
+ * Token CSRF por sessão.
+ */
+function csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function csrf_campo() {
+    return '<input type="hidden" name="csrf_token" value="' . csrf_token() . '">';
+}
+
+function csrf_valido($token) {
+    return !empty($_SESSION['csrf_token']) && !empty($token) && hash_equals($_SESSION['csrf_token'], $token);
+}
 ?>
