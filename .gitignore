@@ -1,0 +1,14 @@
+# Ambiente local
+.env
+.DS_Store
+Thumbs.db
+*.log
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# Dependências (caso adicionadas futuramente)
+vendor/
+node_modules/
+
