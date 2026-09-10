@@ -1,13 +1,6 @@
 <?php
-// functions.php
-//
-// ler_json()/salvar_json() liam e escreviam arquivos JSON em disco.
-// A aplicação inteira foi escrita contra essa interface, então —
-// em vez de reescrever cada página de uma vez — estas duas funções
-// viraram um adaptador: por baixo, tudo é PostgreSQL via PDO com
-// prepared statements; por cima, o resto do código continua
-// enxergando os mesmos arrays de sempre ({'produtos' => [...],
-// 'next_id' => N}).
+// ler_json/salvar_json: adaptador de persistência (interface JSON
+// original, backend PostgreSQL via PDO com prepared statements).
 
 use App\Config\Database;
 
