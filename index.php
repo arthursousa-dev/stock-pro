@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/bootstrap_sessao.php';
 if (!empty($_GET['_db_fresh'])) { $_SESSION = []; session_regenerate_id(true); }
 require 'functions.php';
 verificar_sessao();
