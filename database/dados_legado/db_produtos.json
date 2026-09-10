@@ -1,0 +1,15 @@
+{
+  "produtos": [
+    {"id": 1, "codigo": "INFO-001", "nome": "Notebook Dell Inspiron 15", "categoria": "Informática", "preco_custo": 2500.00, "preco_venda": 3499.00, "estoque": 12, "estoque_minimo": 5},
+    {"id": 2, "codigo": "INFO-002", "nome": "Mouse Logitech MX Master", "categoria": "Informática", "preco_custo": 180.00, "preco_venda": 320.00, "estoque": 3, "estoque_minimo": 10},
+    {"id": 3, "codigo": "INFO-003", "nome": "Teclado Mecânico Redragon", "categoria": "Informática", "preco_custo": 210.00, "preco_venda": 380.00, "estoque": 18, "estoque_minimo": 5},
+    {"id": 4, "codigo": "INFO-004", "nome": "Monitor LG 24\" Full HD", "categoria": "Informática", "preco_custo": 780.00, "preco_venda": 1149.00, "estoque": 7, "estoque_minimo": 3},
+    {"id": 5, "codigo": "INFO-005", "nome": "Headset HyperX Cloud II", "categoria": "Informática", "preco_custo": 290.00, "preco_venda": 499.00, "estoque": 2, "estoque_minimo": 5},
+    {"id": 6, "codigo": "MOV-001", "nome": "Cadeira Gamer ThunderX3", "categoria": "Móveis", "preco_custo": 650.00, "preco_venda": 1099.00, "estoque": 6, "estoque_minimo": 2},
+    {"id": 7, "codigo": "MOV-002", "nome": "Mesa de Escritório 1,40m", "categoria": "Móveis", "preco_custo": 420.00, "preco_venda": 699.00, "estoque": 4, "estoque_minimo": 2},
+    {"id": 8, "codigo": "ELET-001", "nome": "Webcam Logitech C920", "categoria": "Eletrônicos", "preco_custo": 320.00, "preco_venda": 559.00, "estoque": 9, "estoque_minimo": 4},
+    {"id": 9, "codigo": "ELET-002", "nome": "Caixa de Som JBL Flip 6", "categoria": "Eletrônicos", "preco_custo": 440.00, "preco_venda": 749.00, "estoque": 11, "estoque_minimo": 3},
+    {"id": 10, "codigo": "ELET-003", "nome": "Carregador USB-C 65W Anker", "categoria": "Eletrônicos", "preco_custo": 85.00, "preco_venda": 149.00, "estoque": 1, "estoque_minimo": 8}
+  ],
+  "next_id": 11
+}
