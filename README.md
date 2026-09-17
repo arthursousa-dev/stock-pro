@@ -62,9 +62,18 @@ Acesse `http://localhost:8000`.
 
 ## Roadmap
 
-- [ ] Trocar o cálculo de "próximo id" feito em PHP por depender só do `SERIAL` do banco (hoje `salvar_json()` ainda recebe o id pronto vindo da página, por compatibilidade com o código existente)
-- [ ] Adicionar testes automatizados
-- [ ] Paginação nas listagens de entradas/saídas
+- [x] Novos registros usam `inserirRegistro()` (INSERT direto, id vem do `SERIAL`) em vez de calcular o próximo id em PHP
+- [x] Testes automatizados (autenticação e persistência)
+- [x] Paginação nas listagens de entradas/saídas
+
+## Testes
+
+```bash
+composer install
+createdb stockpro_test
+psql stockpro_test < database/schema.sql
+DB_NAME=stockpro_test vendor/bin/phpunit
+```
 
 ## Autor
 
