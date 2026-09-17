@@ -12,13 +12,11 @@ function ler_json($arquivo) {
     switch ($arquivo) {
         case 'db_produtos.json':
             $itens = $pdo->query('SELECT * FROM produtos ORDER BY id')->fetchAll();
-            $proximo = (int) $pdo->query("SELECT COALESCE(MAX(id), 0) + 1 FROM produtos")->fetchColumn();
-            return ['produtos' => $itens, 'next_id' => $proximo];
+            return ['produtos' => $itens];
 
         case 'db_fornecedores.json':
             $itens = $pdo->query('SELECT * FROM fornecedores ORDER BY id')->fetchAll();
-            $proximo = (int) $pdo->query("SELECT COALESCE(MAX(id), 0) + 1 FROM fornecedores")->fetchColumn();
-            return ['fornecedores' => $itens, 'next_id' => $proximo];
+            return ['fornecedores' => $itens];
 
         case 'db_entradas.json':
             $itens = $pdo->query(
@@ -31,8 +29,7 @@ function ler_json($arquivo) {
                  JOIN produtos p     ON p.id = e.produto_id
                  ORDER BY e.data DESC, e.id DESC"
             )->fetchAll();
-            $proximo = (int) $pdo->query("SELECT COALESCE(MAX(id), 0) + 1 FROM entradas")->fetchColumn();
-            return ['entradas' => $itens, 'next_id' => $proximo];
+            return ['entradas' => $itens];
 
         case 'db_saidas.json':
             $itens = $pdo->query(
@@ -43,8 +40,7 @@ function ler_json($arquivo) {
                  JOIN produtos p ON p.id = s.produto_id
                  ORDER BY s.data DESC, s.id DESC"
             )->fetchAll();
-            $proximo = (int) $pdo->query("SELECT COALESCE(MAX(id), 0) + 1 FROM saidas")->fetchColumn();
-            return ['saidas' => $itens, 'next_id' => $proximo];
+            return ['saidas' => $itens];
 
         default:
             return [];
@@ -156,13 +152,32 @@ function salvar_json($arquivo, $dados) {
     }
 }
 
-function gerar_id($arquivo, $chave_next = 'next_id') {
-    // Mantido por compatibilidade: algumas telas ainda pedem o
-    // "próximo id" antes de montar o array pra salvar_json(). Com
-    // SERIAL no banco, o id real é definido no INSERT — isso aqui
-    // só evita colisão entre o id previsto e o efetivamente salvo.
-    $dados = ler_json($arquivo);
-    return (int) ($dados[$chave_next] ?? 1);
+/**
+ * Insere um novo registro direto na tabela, via PDO, e devolve o id
+ * gerado pelo SERIAL do banco. Substitui o cálculo de "próximo id"
+ * feito em PHP a partir de ler_json() — o id nunca mais é previsto
+ * na aplicação, só o banco decide.
+ */
+function inserirRegistro(string $tabela, array $campos): int
+{
+    $pdo = Database::getConnection();
+    $colunas = array_keys($campos);
+    $marcadores = array_map(fn($c) => ":{$c}", $colunas);
+
+    $sql = sprintf(
+        'INSERT INTO %s (%s) VALUES (%s)',
+        $tabela,
+        implode(', ', $colunas),
+        implode(', ', $marcadores)
+    );
+
+    $params = [];
+    foreach ($campos as $coluna => $valor) {
+        $params[":{$coluna}"] = $valor;
+    }
+
+    $pdo->prepare($sql)->execute($params);
+    return (int) $pdo->lastInsertId("{$tabela}_id_seq");
 }
 
 function verificar_sessao() {
@@ -270,5 +285,64 @@ function csrf_campo() {
 
 function csrf_valido($token) {
     return !empty($_SESSION['csrf_token']) && !empty($token) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+/**
+ * Fatia uma lista já filtrada/ordenada em páginas, lendo a página
+ * atual de $_GET['pagina']. Devolve os itens da página, mais os
+ * metadados necessários pra desenhar os controles de navegação.
+ */
+function paginar(array $itens, int $porPagina = 15): array {
+    $total = count($itens);
+    $totalPaginas = max(1, (int) ceil($total / $porPagina));
+    $paginaAtual = max(1, min($totalPaginas, (int) ($_GET['pagina'] ?? 1)));
+    $offset = ($paginaAtual - 1) * $porPagina;
+
+    return [
+        'itens' => array_slice($itens, $offset, $porPagina),
+        'pagina_atual' => $paginaAtual,
+        'total_paginas' => $totalPaginas,
+        'total_itens' => $total,
+    ];
+}
+
+/**
+ * Monta os controles de paginação (Anterior / números / Próxima),
+ * preservando os filtros já aplicados na querystring.
+ */
+function controlesPaginacao(array $paginacao): string {
+    if ($paginacao['total_paginas'] <= 1) {
+        return '';
+    }
+
+    $paramsBase = $_GET;
+    unset($paramsBase['pagina']);
+
+    $linkPara = function (int $pagina) use ($paramsBase) {
+        return '?' . http_build_query(array_merge($paramsBase, ['pagina' => $pagina]));
+    };
+
+    $atual = $paginacao['pagina_atual'];
+    $totalPag = $paginacao['total_paginas'];
+
+    $html = '<nav class="paginacao" aria-label="Navegação de páginas" style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:16px;flex-wrap:wrap">';
+
+    $html .= $atual > 1
+        ? '<a href="' . $linkPara($atual - 1) . '" class="btn-ghost">‹ Anterior</a>'
+        : '<span class="btn-ghost" aria-disabled="true" style="opacity:.4">‹ Anterior</span>';
+
+    for ($p = 1; $p <= $totalPag; $p++) {
+        $ativo = $p === $atual;
+        $html .= $ativo
+            ? '<span aria-current="page" style="padding:6px 12px;border-radius:8px;background:var(--cyan);color:#04141c;font-weight:700">' . $p . '</span>'
+            : '<a href="' . $linkPara($p) . '" style="padding:6px 12px">' . $p . '</a>';
+    }
+
+    $html .= $atual < $totalPag
+        ? '<a href="' . $linkPara($atual + 1) . '" class="btn-ghost">Próxima ›</a>'
+        : '<span class="btn-ghost" aria-disabled="true" style="opacity:.4">Próxima ›</span>';
+
+    $html .= '</nav>';
+    return $html;
 }
 ?>

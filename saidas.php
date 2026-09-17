@@ -20,11 +20,12 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
             if (!$produto) { $erro='Produto não encontrado.'; }
             elseif(($produto['estoque']??0)<$qtd) { $erro='Estoque insuficiente! Disponível: '.(int)($produto['estoque']??0).' un.'; }
             else {
-                $db_sai=ler_json('db_saidas.json'); $saidas=$db_sai['saidas']??[]; $next_id=$db_sai['next_id']??1;
                 $total=round($qtd*$preco,2);
-                $saidas[]=['id'=>$next_id,'nota_fiscal'=>$nf,'data'=>$data,'cliente'=>$cliente,'produto_id'=>$prod_id,'produto_nome'=>$produto['nome'],'quantidade'=>$qtd,'preco_unitario'=>$preco,'total'=>$total];
-                $db_sai['saidas']=$saidas; $db_sai['next_id']=$next_id+1;
-                salvar_json('db_saidas.json',$db_sai);
+                inserirRegistro('saidas', [
+                    'nota_fiscal' => $nf, 'data' => $data, 'cliente' => $cliente,
+                    'produto_id' => $prod_id, 'quantidade' => $qtd,
+                    'preco_unitario' => $preco, 'total' => $total,
+                ]);
                 foreach($db_prod['produtos'] as &$p){if($p['id']==$prod_id){$p['estoque']-=$qtd;break;}}
                 salvar_json('db_produtos.json',$db_prod);
                 $msg='Saída registrada com sucesso!';
@@ -49,6 +50,7 @@ $lista=array_filter($saidas,function($s)use($filtro_cli,$filtro_data_ini,$filtro
 });
 usort($lista,fn($a,$b)=>strcmp($b['data'],$a['data']));
 $total_sai=array_sum(array_column($saidas,'total'));
+$pag = paginar(array_values($lista));
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -101,7 +103,7 @@ $total_sai=array_sum(array_column($saidas,'total'));
         <?php if(empty($lista)): ?>
         <tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Nenhuma saída encontrada.</div></div></td></tr>
         <?php else: ?>
-        <?php foreach($lista as $s): ?>
+        <?php foreach($pag['itens'] as $s): ?>
         <tr>
           <td style="font-family:monospace;font-size:.83rem;color:var(--amber)"><?= htmlspecialchars($s['nota_fiscal']??'') ?></td>
           <td><?= formatar_data($s['data']??'') ?></td>
@@ -114,6 +116,7 @@ $total_sai=array_sum(array_column($saidas,'total'));
         <?php endforeach; endif; ?>
       </tbody>
     </table>
+    <?= controlesPaginacao($pag) ?>
   </div>
 </div>
 

@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
     elseif (!csrf_valido($_POST['csrf_token'] ?? null)) { $erro='Sessão expirada. Recarregue a página e tente novamente.'; }
     else {
         $acao=$_POST['acao']??'';
-        $db=ler_json('db_fornecedores.json'); $forn=$db['fornecedores']??[]; $next_id=$db['next_id']??1;
+        $db=ler_json('db_fornecedores.json'); $forn=$db['fornecedores']??[];
         if ($acao==='salvar') {
             $id=(int)($_POST['id']??0); $nome=trim($_POST['nome']??'');
             $email=trim($_POST['email']??''); $tel=trim($_POST['telefone']??''); $cnpj=trim($_POST['cnpj']??'');
@@ -19,13 +19,13 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
             else {
                 if ($id>0) {
                     foreach($forn as &$f){if($f['id']==$id){$f['nome']=$nome;$f['email']=$email;$f['telefone']=$tel;$f['cnpj']=$cnpj;break;}}
+                    $db['fornecedores']=$forn;
+                    salvar_json('db_fornecedores.json',$db);
                     $msg='Fornecedor atualizado!';
                 } else {
-                    $forn[]=['id'=>$next_id,'nome'=>$nome,'email'=>$email,'telefone'=>$tel,'cnpj'=>$cnpj];
-                    $next_id++; $msg='Fornecedor cadastrado!';
+                    inserirRegistro('fornecedores', ['nome'=>$nome,'email'=>$email,'telefone'=>$tel,'cnpj'=>$cnpj]);
+                    $msg='Fornecedor cadastrado!';
                 }
-                $db['fornecedores']=$forn; $db['next_id']=$next_id;
-                salvar_json('db_fornecedores.json',$db);
             }
         } elseif ($acao==='excluir' && verificar_permissao(['admin'])) {
             $id=(int)($_POST['id']??0);

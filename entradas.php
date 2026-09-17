@@ -21,11 +21,12 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
             foreach($db_prod['produtos']??[] as $p){if($p['id']==$prod_id){$produto=$p;break;}}
             if (!$fornecedor||!$produto) { $erro='Fornecedor ou produto inválido.'; }
             else {
-                $db_ent=ler_json('db_entradas.json'); $entradas=$db_ent['entradas']??[]; $next_id=$db_ent['next_id']??1;
                 $total=round($qtd*$preco,2);
-                $entradas[]=['id'=>$next_id,'nota_fiscal'=>$nf,'data'=>$data,'fornecedor_id'=>$forn_id,'fornecedor_nome'=>$fornecedor['nome'],'produto_id'=>$prod_id,'produto_nome'=>$produto['nome'],'quantidade'=>$qtd,'preco_unitario'=>$preco,'total'=>$total];
-                $db_ent['entradas']=$entradas; $db_ent['next_id']=$next_id+1;
-                salvar_json('db_entradas.json',$db_ent);
+                inserirRegistro('entradas', [
+                    'nota_fiscal' => $nf, 'data' => $data, 'fornecedor_id' => $forn_id,
+                    'produto_id' => $prod_id, 'quantidade' => $qtd,
+                    'preco_unitario' => $preco, 'total' => $total,
+                ]);
                 foreach($db_prod['produtos'] as &$p){if($p['id']==$prod_id){$p['estoque']+=$qtd;break;}}
                 salvar_json('db_produtos.json',$db_prod);
                 $msg='Entrada registrada com sucesso!';
@@ -51,6 +52,7 @@ $lista=array_filter($entradas,function($e)use($filtro_forn,$filtro_data_ini,$fil
 });
 usort($lista,fn($a,$b)=>strcmp($b['data'],$a['data']));
 $total_ent=array_sum(array_column($entradas,'total'));
+$pag = paginar(array_values($lista));
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -103,7 +105,7 @@ $total_ent=array_sum(array_column($entradas,'total'));
         <?php if(empty($lista)): ?>
         <tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Nenhuma entrada encontrada.</div></div></td></tr>
         <?php else: ?>
-        <?php foreach($lista as $e): ?>
+        <?php foreach($pag['itens'] as $e): ?>
         <tr>
           <td style="font-family:monospace;font-size:.83rem;color:var(--cyan)"><?= htmlspecialchars($e['nota_fiscal']??'') ?></td>
           <td><?= formatar_data($e['data']??'') ?></td>
@@ -116,6 +118,7 @@ $total_ent=array_sum(array_column($entradas,'total'));
         <?php endforeach; endif; ?>
       </tbody>
     </table>
+    <?= controlesPaginacao($pag) ?>
   </div>
 </div>
 

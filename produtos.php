@@ -15,7 +15,6 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
         $acao = $_POST['acao'] ?? '';
         $db = ler_json('db_produtos.json');
         $produtos = $db['produtos'] ?? [];
-        $next_id  = $db['next_id']  ?? 1;
         if ($acao === 'salvar') {
             $id=$p_id=(int)($_POST['id']??0);
             $codigo=trim($_POST['codigo']??''); $nome=trim($_POST['nome']??'');
@@ -29,13 +28,17 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                     foreach ($produtos as &$p) {
                         if ($p['id']==$id) { $p['codigo']=$codigo;$p['nome']=$nome;$p['categoria']=$cat;$p['preco_custo']=$custo;$p['preco_venda']=$venda;$p['estoque']=$estq;$p['estoque_minimo']=$min; break; }
                     }
+                    $db['produtos']=$produtos;
+                    salvar_json('db_produtos.json', $db);
                     $msg = 'Produto atualizado!';
                 } else {
-                    $produtos[] = ['id'=>$next_id,'codigo'=>$codigo,'nome'=>$nome,'categoria'=>$cat,'preco_custo'=>$custo,'preco_venda'=>$venda,'estoque'=>$estq,'estoque_minimo'=>$min];
-                    $next_id++; $msg = 'Produto cadastrado!';
+                    inserirRegistro('produtos', [
+                        'codigo' => $codigo, 'nome' => $nome, 'categoria' => $cat,
+                        'preco_custo' => $custo, 'preco_venda' => $venda,
+                        'estoque' => $estq, 'estoque_minimo' => $min,
+                    ]);
+                    $msg = 'Produto cadastrado!';
                 }
-                $db['produtos']=$produtos; $db['next_id']=$next_id;
-                salvar_json('db_produtos.json', $db);
             }
         } elseif ($acao === 'excluir' && verificar_permissao(['admin'])) {
             $id=(int)($_POST['id']??0);
