@@ -11,7 +11,8 @@ $fornecedores = ler_json('db_fornecedores.json')['fornecedores'] ?? [];
 $aba = $_GET['aba'] ?? 'estoque';
 
 // Exportar TXT
-if (isset($_GET['exportar'])) {
+// Só os três relatórios conhecidos: o tipo vai para o nome do arquivo no cabeçalho HTTP.
+if (in_array($_GET['exportar'] ?? '', ['estoque', 'movimentacao', 'financeiro'], true)) {
     $tipo=$_GET['exportar']; $linhas=[];
     $linhas[]='=== STOCKPRO — RELATÓRIO '.strtoupper($tipo).' ===';
     $linhas[]='Gerado em: '.date('d/m/Y H:i:s');
