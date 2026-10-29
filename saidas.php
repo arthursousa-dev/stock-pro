@@ -15,21 +15,13 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
         $qtd=(int)($_POST['quantidade']??0); $preco=(float)str_replace(',','.',($_POST['preco_unitario']??0));
         if (!$nf||!$data||!$cliente||!$prod_id||$qtd<=0||$preco<=0) { $erro='Preencha todos os campos corretamente.'; }
         else {
-            $db_prod=ler_json('db_produtos.json'); $produto=null;
-            foreach($db_prod['produtos']??[] as $p){if($p['id']==$prod_id){$produto=$p;break;}}
-            if (!$produto) { $erro='Produto não encontrado.'; }
-            elseif(($produto['estoque']??0)<$qtd) { $erro='Estoque insuficiente! Disponível: '.(int)($produto['estoque']??0).' un.'; }
-            else {
-                $total=round($qtd*$preco,2);
-                inserirRegistro('saidas', [
-                    'nota_fiscal' => $nf, 'data' => $data, 'cliente' => $cliente,
-                    'produto_id' => $prod_id, 'quantidade' => $qtd,
-                    'preco_unitario' => $preco, 'total' => $total,
-                ]);
-                foreach($db_prod['produtos'] as &$p){if($p['id']==$prod_id){$p['estoque']-=$qtd;break;}}
-                salvar_json('db_produtos.json',$db_prod);
-                $msg='Saída registrada com sucesso!';
-            }
+            $total=round($qtd*$preco,2);
+            $erro = registrarMovimento('saidas', [
+                'nota_fiscal' => $nf, 'data' => $data, 'cliente' => $cliente,
+                'produto_id' => $prod_id, 'quantidade' => $qtd,
+                'preco_unitario' => $preco, 'total' => $total,
+            ]) ?? '';
+            if (!$erro) $msg='Saída registrada com sucesso!';
         }
     }
 }

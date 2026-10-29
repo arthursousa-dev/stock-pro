@@ -180,6 +180,45 @@ function inserirRegistro(string $tabela, array $campos): int
     return (int) $pdo->lastInsertId("{$tabela}_id_seq");
 }
 
+/**
+ * Grava uma entrada ou saída e ajusta o estoque na mesma transação.
+ * O UPDATE soma/subtrai no próprio banco (estoque = estoque ± qtd), então duas
+ * movimentações simultâneas não sobrescrevem uma à outra; na saída, a condição
+ * estoque >= qtd impede vender o que não existe. Devolve null em caso de sucesso
+ * ou a mensagem de erro para o usuário.
+ */
+function registrarMovimento(string $tipo, array $campos): ?string
+{
+    $pdo = Database::getConnection();
+    $qtd = (int) $campos['quantidade'];
+    try {
+        $pdo->beginTransaction();
+        if ($tipo === 'saidas') {
+            $stmt = $pdo->prepare('UPDATE produtos SET estoque = estoque - :qtd WHERE id = :id AND estoque >= :minimo RETURNING estoque');
+        } else {
+            $stmt = $pdo->prepare('UPDATE produtos SET estoque = estoque + :qtd WHERE id = :id RETURNING estoque');
+        }
+        $params = [':qtd' => $qtd, ':id' => (int) $campos['produto_id']];
+        $stmt->execute($tipo === 'saidas' ? $params + [':minimo' => $qtd] : $params);
+        if ($stmt->fetchColumn() === false) {
+            $pdo->rollBack();
+            $disp = $pdo->prepare('SELECT estoque FROM produtos WHERE id = :id');
+            $disp->execute([':id' => (int) $campos['produto_id']]);
+            $atual = $disp->fetchColumn();
+            return $atual === false ? 'Produto não encontrado.' : 'Estoque insuficiente! Disponível: ' . (int) $atual . ' un.';
+        }
+        inserirRegistro($tipo, $campos);
+        $pdo->commit();
+        return null;
+    } catch (\Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        error_log("registrarMovimento ($tipo) falhou: " . $e->getMessage());
+        return 'Não foi possível registrar a movimentação. Verifique os dados e tente novamente.';
+    }
+}
+
 function verificar_sessao() {
     if (empty($_SESSION['logado'])) {
         header('Location: login.php');

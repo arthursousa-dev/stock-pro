@@ -17,19 +17,15 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
         else {
             $db_forn=ler_json('db_fornecedores.json'); $fornecedor=null;
             foreach($db_forn['fornecedores']??[] as $f){if($f['id']==$forn_id){$fornecedor=$f;break;}}
-            $db_prod=ler_json('db_produtos.json'); $produto=null;
-            foreach($db_prod['produtos']??[] as $p){if($p['id']==$prod_id){$produto=$p;break;}}
-            if (!$fornecedor||!$produto) { $erro='Fornecedor ou produto inválido.'; }
+            if (!$fornecedor) { $erro='Fornecedor inválido.'; }
             else {
                 $total=round($qtd*$preco,2);
-                inserirRegistro('entradas', [
+                $erro = registrarMovimento('entradas', [
                     'nota_fiscal' => $nf, 'data' => $data, 'fornecedor_id' => $forn_id,
                     'produto_id' => $prod_id, 'quantidade' => $qtd,
                     'preco_unitario' => $preco, 'total' => $total,
-                ]);
-                foreach($db_prod['produtos'] as &$p){if($p['id']==$prod_id){$p['estoque']+=$qtd;break;}}
-                salvar_json('db_produtos.json',$db_prod);
-                $msg='Entrada registrada com sucesso!';
+                ]) ?? '';
+                if (!$erro) $msg='Entrada registrada com sucesso!';
             }
         }
     }
