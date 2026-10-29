@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap_sessao.php';
 require 'functions.php';
-if (!empty($_GET['_db_fresh'])) { $_SESSION = []; session_regenerate_id(true); }
 
 $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -12,6 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $senha = trim($_POST['senha'] ?? '');
         $usuario = autenticar($email, $senha);
         if ($usuario) {
+            // Novo id de sessão após autenticar: um id plantado antes do login não vira sessão logada.
+            session_regenerate_id(true);
             $_SESSION['logado'] = true;
             $_SESSION['email']  = $usuario['email'];
             $_SESSION['nome']   = $usuario['nome'];
