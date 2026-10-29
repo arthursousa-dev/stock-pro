@@ -12,6 +12,7 @@ class Database
     public static function getConnection(): PDO
     {
         if (self::$instancia === null) {
+            self::carregarEnv(dirname(__DIR__, 2) . '/.env');
             $host = getenv('DB_HOST') ?: 'localhost';
             $port = getenv('DB_PORT') ?: '5432';
             $nome = getenv('DB_NAME') ?: 'stockpro';
@@ -33,5 +34,22 @@ class Database
         }
 
         return self::$instancia;
+    }
+
+    /** Lê CHAVE=valor do .env sem sobrescrever variáveis já definidas no ambiente (ex.: DB_NAME dos testes). */
+    private static function carregarEnv(string $arquivo): void
+    {
+        if (!is_readable($arquivo)) {
+            return;
+        }
+        foreach (file($arquivo, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $linha) {
+            if (str_starts_with(ltrim($linha), '#') || !str_contains($linha, '=')) {
+                continue;
+            }
+            [$chave, $valor] = array_map('trim', explode('=', $linha, 2));
+            if (getenv($chave) === false) {
+                putenv("{$chave}={$valor}");
+            }
+        }
     }
 }
