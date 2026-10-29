@@ -281,7 +281,7 @@ function autenticar($email, $senha) {
     $pdo = Database::getConnection();
     $email = strtolower(trim($email));
 
-    $stmt = $pdo->prepare('SELECT * FROM usuarios WHERE email = :email');
+    $stmt = $pdo->prepare('SELECT *, CASE WHEN bloqueado_ate > now() THEN 1 ELSE 0 END AS bloqueado FROM usuarios WHERE email = :email');
     $stmt->execute([':email' => $email]);
     $u = $stmt->fetch();
 
@@ -289,7 +289,8 @@ function autenticar($email, $senha) {
         return false;
     }
 
-    if ($u['bloqueado_ate'] !== null && strtotime($u['bloqueado_ate']) > time()) {
+    // Comparado no banco: bloqueado_ate vem do now() do PostgreSQL, e strtotime() usaria o fuso do PHP.
+    if ((int) $u['bloqueado'] === 1) {
         return false;
     }
 
