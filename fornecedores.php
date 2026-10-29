@@ -15,22 +15,29 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
         if ($acao==='salvar') {
             $id=(int)($_POST['id']??0); $nome=trim($_POST['nome']??'');
             $email=trim($_POST['email']??''); $tel=trim($_POST['telefone']??''); $cnpj=trim($_POST['cnpj']??'');
-            if (!$nome) { $erro='Nome é obrigatório.'; }
+            // cnpj é NOT NULL UNIQUE no banco: vazio colidia no segundo cadastro sem CNPJ.
+            if (!$nome || !$cnpj) { $erro='Nome e CNPJ são obrigatórios.'; }
             else {
                 if ($id>0) {
                     foreach($forn as &$f){if($f['id']==$id){$f['nome']=$nome;$f['email']=$email;$f['telefone']=$tel;$f['cnpj']=$cnpj;break;}}
                     $db['fornecedores']=$forn;
-                    salvar_json('db_fornecedores.json',$db);
-                    $msg='Fornecedor atualizado!';
+                    if (salvar_json('db_fornecedores.json',$db)) $msg='Fornecedor atualizado!';
+                    else $erro='Não foi possível salvar: verifique se o CNPJ já pertence a outro fornecedor.';
                 } else {
-                    inserirRegistro('fornecedores', ['nome'=>$nome,'email'=>$email,'telefone'=>$tel,'cnpj'=>$cnpj]);
-                    $msg='Fornecedor cadastrado!';
+                    try {
+                        inserirRegistro('fornecedores', ['nome'=>$nome,'email'=>$email,'telefone'=>$tel,'cnpj'=>$cnpj]);
+                        $msg='Fornecedor cadastrado!';
+                    } catch (PDOException $e) {
+                        $erro = $e->getCode()==='23505' ? 'Já existe um fornecedor com esse CNPJ.' : 'Não foi possível cadastrar o fornecedor.';
+                    }
                 }
             }
         } elseif ($acao==='excluir' && verificar_permissao(['admin'])) {
             $id=(int)($_POST['id']??0);
             $db['fornecedores']=array_values(array_filter($forn,fn($f)=>$f['id']!=$id));
-            salvar_json('db_fornecedores.json',$db); $msg='Fornecedor excluído.';
+            // Fornecedor com entradas é protegido pela FK (ON DELETE RESTRICT).
+            if (salvar_json('db_fornecedores.json',$db)) $msg='Fornecedor excluído.';
+            else $erro='Este fornecedor tem entradas registradas e não pode ser excluído.';
         }
     }
 }
@@ -144,7 +151,7 @@ $lista=$busca?array_filter($fornecedores,fn($f)=>str_contains(mb_strtolower($f['
       <input type="hidden" name="id" id="forn_id" value="0">
       <div class="form-grid">
         <div class="form-group"><label>Nome *</label><input type="text" name="nome" id="forn_nome" required class="input-field" placeholder="Razão social"></div>
-        <div class="form-group"><label>CNPJ</label><input type="text" name="cnpj" id="forn_cnpj" class="input-field" placeholder="00.000.000/0000-00"></div>
+        <div class="form-group"><label>CNPJ *</label><input type="text" name="cnpj" id="forn_cnpj" required class="input-field" placeholder="00.000.000/0000-00"></div>
         <div class="form-group"><label>E-mail</label><input type="email" name="email" id="forn_email" class="input-field" placeholder="contato@empresa.com"></div>
         <div class="form-group"><label>Telefone</label><input type="text" name="telefone" id="forn_tel" class="input-field" placeholder="(00) 00000-0000"></div>
       </div>

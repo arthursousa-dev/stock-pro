@@ -29,21 +29,27 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
                         if ($p['id']==$id) { $p['codigo']=$codigo;$p['nome']=$nome;$p['categoria']=$cat;$p['preco_custo']=$custo;$p['preco_venda']=$venda;$p['estoque']=$estq;$p['estoque_minimo']=$min; break; }
                     }
                     $db['produtos']=$produtos;
-                    salvar_json('db_produtos.json', $db);
-                    $msg = 'Produto atualizado!';
+                    if (salvar_json('db_produtos.json', $db)) $msg = 'Produto atualizado!';
+                    else $erro = 'Não foi possível salvar: verifique se o código já existe em outro produto.';
                 } else {
-                    inserirRegistro('produtos', [
-                        'codigo' => $codigo, 'nome' => $nome, 'categoria' => $cat,
-                        'preco_custo' => $custo, 'preco_venda' => $venda,
-                        'estoque' => $estq, 'estoque_minimo' => $min,
-                    ]);
-                    $msg = 'Produto cadastrado!';
+                    try {
+                        inserirRegistro('produtos', [
+                            'codigo' => $codigo, 'nome' => $nome, 'categoria' => $cat,
+                            'preco_custo' => $custo, 'preco_venda' => $venda,
+                            'estoque' => $estq, 'estoque_minimo' => $min,
+                        ]);
+                        $msg = 'Produto cadastrado!';
+                    } catch (PDOException $e) {
+                        $erro = $e->getCode() === '23505' ? 'Já existe um produto com esse código.' : 'Não foi possível cadastrar o produto.';
+                    }
                 }
             }
         } elseif ($acao === 'excluir' && verificar_permissao(['admin'])) {
             $id=(int)($_POST['id']??0);
             $db['produtos']=array_values(array_filter($produtos, fn($p)=>$p['id']!=$id));
-            salvar_json('db_produtos.json', $db); $msg = 'Produto excluído.';
+            // Produto com entradas/saídas é protegido pela FK (ON DELETE RESTRICT).
+            if (salvar_json('db_produtos.json', $db)) $msg = 'Produto excluído.';
+            else $erro = 'Este produto tem movimentações registradas e não pode ser excluído.';
         }
     }
 }
